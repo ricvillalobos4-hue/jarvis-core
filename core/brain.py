@@ -4,7 +4,7 @@ from anthropic import Anthropic
 
 from core.personality import JARVIS_SYSTEM_PROMPT
 from core.memory import JarvisMemory
-
+from core.tools import JarvisTools
 
 class JarvisBrain:
 
@@ -25,7 +25,7 @@ class JarvisBrain:
 
         self.history = []
         self.memory = JarvisMemory()
-
+self.tools = JarvisTools()
     def remember(self, information):
         return self.memory.remember(information)
 
