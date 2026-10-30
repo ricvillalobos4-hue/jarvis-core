@@ -51,7 +51,15 @@ self.tools = JarvisTools()
             f"- {item['information']}"
             for item in saved_memories
         )
+        command_response = self.tools.execute(message)
 
+        if command_response != "No reconozco ese comando.":
+            if message.lower().strip() in ("hora", "estado"):
+                self.history.append({
+                    "role": "assistant",
+                    "content": command_response
+                })
+                return command_response
         system_prompt = JARVIS_SYSTEM_PROMPT
 
         if memory_context:
