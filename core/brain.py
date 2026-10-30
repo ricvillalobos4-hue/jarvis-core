@@ -10,7 +10,7 @@ class JarvisBrain:
         if not api_key:
             raise ValueError("Falta la variable de entorno ANTHROPIC_API_KEY.")
         self.client = Anthropic(api_key=api_key)
-        self.model = "claude-3-5-sonnet-20241022"
+        self.model = "claude-sonnet-4-5"
         self.memory = JarvisMemory()
 
     def process_message(self, user_message: str) -> str:
@@ -40,4 +40,4 @@ class JarvisBrain:
             self.memory.add_message("assistant", assistant_reply)
             return assistant_reply
         except Exception as e:
-            return f"Error en el núcleo de JARVIS: {str(e)}"
+            return f"Error en el núcleo de JARVIS: {str
