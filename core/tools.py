@@ -1,25 +1,13 @@
-class JarvisTools:
-    def __init__(self):
-        self.commands = {
-            "hora": self.get_time,
-            "estado": self.get_status,
-        }
+from datetime import datetime
+import platform
 
-    def get_time(self):
-        from datetime import datetime
-        return datetime.now().strftime("%H:%M")
-
-    def get_status(self):
-        return "JARVIS CORE está operativo."
-
-    def execute(self, command):
-        if not isinstance(command, str):
-            return "Comando no válido."
-
-        command = command.lower().strip()
-        action = self.commands.get(command)
-
-        if action is None:
-            return "No reconozco ese comando."
-
-        return action()
+def execute_tool(tool_name: str, args: dict = None) -> str:
+    """Ejecuta una herramienta específica según el comando solicitado."""
+    if tool_name == "get_time":
+        now = datetime.now()
+        return f"La hora actual del sistema es: {now.strftime('%H:%M:%S')} del {now.strftime('%d/%m/%Y')}."
+    
+    elif tool_name == "system_status":
+        return f"Sistemas operativos estables. Entorno: {platform.system()} {platform.release()}. Servidor en línea."
+    
+    return f"Herramienta '{tool_name}' no reconocida."
