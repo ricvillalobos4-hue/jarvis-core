@@ -1,90 +1,43 @@
-
 import os
 from anthropic import Anthropic
-
-from core.personality import JARVIS_SYSTEM_PROMPT
+from core.personality import get_system_prompt
 from core.memory import JarvisMemory
-from core.tools import JarvisTools
+from core.tools import execute_tool
 
 class JarvisBrain:
-
     def __init__(self):
         api_key = os.getenv("ANTHROPIC_API_KEY")
-
         if not api_key:
-            raise RuntimeError(
-                "JARVIS necesita configurar su API key."
-            )
-
+            raise ValueError("Falta la variable de entorno ANTHROPIC_API_KEY.")
         self.client = Anthropic(api_key=api_key)
-
-        self.model = os.getenv(
-            "ANTHROPIC_MODEL",
-            "claude-sonnet-4-5"
-        )
-
-        self.history = []
+        self.model = "claude-3-5-sonnet-20241022"
         self.memory = JarvisMemory()
-self.tools = JarvisTools()
-    def remember(self, information):
-        return self.memory.remember(information)
 
-    def recall(self):
-        return self.memory.recall()
+    def process_message(self, user_message: str) -> str:
+        try:
+            self.memory.add_message("user", user_message)
+            tool_response = None
+            msg_lower = user_message.lower()
 
-    def forget_all_memories(self):
-        return self.memory.forget_all()
+            if "hora" in msg_lower:
+                tool_response = execute_tool("get_time")
+            elif "estado" in msg_lower or "sistema" in msg_lower:
+                tool_response = execute_tool("system_status")
 
-    def think(self, message):
+            if tool_response:
+                system_content = f"{get_system_prompt()}\n\nInformación del sistema: {tool_response}"
+            else:
+                system_content = get_system_prompt()
 
-        if not isinstance(message, str) or not message.strip():
-            raise ValueError("El mensaje no puede estar vacío.")
-
-        self.history.append({
-            "role": "user",
-            "content": message.strip()
-        })
-
-        saved_memories = self.memory.recall()
-
-        memory_context = "\n".join(
-            f"- {item['information']}"
-            for item in saved_memories
-        )
-        command_response = self.tools.execute(message)
-
-        if command_response != "No reconozco ese comando.":
-            if message.lower().strip() in ("hora", "estado"):
-                self.history.append({
-                    "role": "assistant",
-                    "content": command_response
-                })
-                return command_response
-        system_prompt = JARVIS_SYSTEM_PROMPT
-
-        if memory_context:
-            system_prompt += (
-                "\n\nMEMORIA PERSISTENTE DE JARVIS:\n"
-                + memory_context
-                + "\nUtiliza estos recuerdos cuando sean relevantes."
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=1024,
+                system=system_content,
+                messages=self.memory.get_history()
             )
 
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=2000,
-            system=system_prompt,
-            messages=self.history[-20:]
-        )
-
-        answer = "".join(
-            block.text
-            for block in response.content
-            if block.type == "text"
-        )
-
-        self.history.append({
-            "role": "assistant",
-            "content": answer
-        })
-
-        return answer
+            assistant_reply = response.content[0].text
+            self.memory.add_message("assistant", assistant_reply)
+            return assistant_reply
+        except Exception as e:
+            return f"Error en el núcleo de JARVIS: {str(e)}"
