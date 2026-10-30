@@ -2,9 +2,8 @@
 import os
 from anthropic import Anthropic
 
-from core.personality import (
-    JARVIS_SYSTEM_PROMPT
-)
+from core.personality import JARVIS_SYSTEM_PROMPT
+from core.memory import JarvisMemory
 
 
 class JarvisBrain:
@@ -25,6 +24,16 @@ class JarvisBrain:
         )
 
         self.history = []
+        self.memory = JarvisMemory()
+
+    def remember(self, information):
+        return self.memory.remember(information)
+
+    def recall(self):
+        return self.memory.recall()
+
+    def forget_all_memories(self):
+        return self.memory.forget_all()
 
     def think(self, message):
 
@@ -36,10 +45,26 @@ class JarvisBrain:
             "content": message.strip()
         })
 
+        saved_memories = self.memory.recall()
+
+        memory_context = "\n".join(
+            f"- {item['information']}"
+            for item in saved_memories
+        )
+
+        system_prompt = JARVIS_SYSTEM_PROMPT
+
+        if memory_context:
+            system_prompt += (
+                "\n\nMEMORIA PERSISTENTE DE JARVIS:\n"
+                + memory_context
+                + "\nUtiliza estos recuerdos cuando sean relevantes."
+            )
+
         response = self.client.messages.create(
             model=self.model,
-            max_tokens=1500,
-            system=JARVIS_SYSTEM_PROMPT,
+            max_tokens=2000,
+            system=system_prompt,
             messages=self.history[-20:]
         )
 
